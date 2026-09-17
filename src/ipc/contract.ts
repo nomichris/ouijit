@@ -45,6 +45,8 @@ import type {
   ApplyProjectsFolderChangeResult,
   CliPanelOp,
   CliPanelResponse,
+  ChromeLaunchResult,
+  ChromeInstanceInfo,
 } from '../types';
 import type { LimaStatus } from '../lima/types';
 import type {
@@ -240,6 +242,11 @@ export interface IpcInvokeContract {
   // ── CLI panel ops (renderer → main reply for a cli:panel-op push) ─────
   'cli-panels:respond': { args: [requestId: number, response: CliPanelResponse]; return: void };
 
+  // ── Web preview ──────────────────────────────────────────────────────
+  'chrome:open': { args: [ptyId: string, url: string]; return: ChromeLaunchResult };
+  'chrome:close': { args: [ptyId: string]; return: void };
+  'chrome:status': { args: [ptyId: string]; return: ChromeInstanceInfo | null };
+
   // ── Scripts ──────────────────────────────────────────────────────────
   'scripts:get-all': { args: [projectPath: string]; return: Script[] };
   'scripts:save': { args: [projectPath: string, script: Script]; return: { success: boolean; script?: Script } };
@@ -433,6 +440,7 @@ export interface IpcPushContract {
   'sandbox-launch-failed': { args: [info: SandboxLaunchFailedPayload] };
   'clone:changed': { args: [jobs: CloneJob[]] };
   'clone:landed': { args: [projectPath: string] };
+  'chrome:changed': { args: [ptyId: string, instance: ChromeInstanceInfo | null] };
   'whats-new': { args: [info: { version: string; notes: string }] };
   'show-about': { args: [info: { version: string }] };
   'cli-change': {

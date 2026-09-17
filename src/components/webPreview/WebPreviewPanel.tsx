@@ -1,8 +1,10 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Icon } from '../terminal/Icon';
 import { TooltipButton } from '../ui/TooltipButton';
+import { Tooltip } from '../ui/Tooltip';
 import { FullWidthToggle, MinimizeButton, PanelCloseButton } from '../terminal/FullWidthToggle';
 import { normalizeUrl } from './urlHelpers';
+import { useSessionChrome } from './useSessionChrome';
 
 interface WebPreviewPanelProps {
   ptyId: string;
@@ -26,10 +28,13 @@ interface ElectronWebviewElement extends HTMLElement {
   canGoBack(): boolean;
   canGoForward(): boolean;
   getURL(): string;
-  openDevTools(): void;
 }
 
+const HEADER_BUTTON =
+  'w-7 h-7 flex items-center justify-center p-0 bg-transparent border-none rounded-md text-ink/60 shrink-0 transition-all duration-150 ease-out hover:bg-ink/10 hover:text-ink/90 disabled:text-ink/20 disabled:hover:bg-transparent [&>svg]:w-3.5 [&>svg]:h-3.5';
+
 export function WebPreviewPanel({
+  ptyId,
   url,
   onChangeUrl,
   fullWidth,
@@ -46,6 +51,7 @@ export function WebPreviewPanel({
   const [editingUrl, setEditingUrl] = useState(!url);
   const [urlDraft, setUrlDraft] = useState(url);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const chrome = useSessionChrome(ptyId);
 
   const webviewRef = useRef<ElectronWebviewElement | null>(null);
   const urlInputRef = useRef<HTMLInputElement>(null);
@@ -140,6 +146,11 @@ export function WebPreviewPanel({
     webviewRef.current?.reload();
   }, []);
 
+  const toggleChrome = useCallback(() => {
+    if (chrome.instance) void chrome.close();
+    else if (currentUrl || url) void chrome.open(currentUrl || url);
+  }, [chrome, currentUrl, url]);
+
   const handleBack = useCallback(() => {
     const w = webviewRef.current;
     if (w?.canGoBack()) w.goBack();
@@ -174,6 +185,8 @@ export function WebPreviewPanel({
     if (editingUrl) urlInputRef.current?.focus();
   }, [editingUrl]);
 
+  const chromeLabel = chrome.instance ? 'Close Chrome' : 'Open in Chrome';
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
@@ -181,7 +194,7 @@ export function WebPreviewPanel({
         <TooltipButton
           text="Back"
           placement="bottom"
-          className="w-7 h-7 flex items-center justify-center p-0 bg-transparent border-none rounded-md text-ink/60 shrink-0 transition-all duration-150 ease-out hover:bg-ink/10 hover:text-ink/90 disabled:text-ink/20 disabled:hover:bg-transparent [&>svg]:w-3.5 [&>svg]:h-3.5"
+          className={HEADER_BUTTON}
           onClick={handleBack}
           disabled={!canGoBack}
         >
@@ -190,7 +203,7 @@ export function WebPreviewPanel({
         <TooltipButton
           text="Forward"
           placement="bottom"
-          className="w-7 h-7 flex items-center justify-center p-0 bg-transparent border-none rounded-md text-ink/60 shrink-0 transition-all duration-150 ease-out hover:bg-ink/10 hover:text-ink/90 disabled:text-ink/20 disabled:hover:bg-transparent [&>svg]:w-3.5 [&>svg]:h-3.5"
+          className={HEADER_BUTTON}
           onClick={handleForward}
           disabled={!canGoForward}
         >
@@ -199,7 +212,7 @@ export function WebPreviewPanel({
         <TooltipButton
           text={loading ? 'Stop' : 'Reload'}
           placement="bottom"
-          className="w-7 h-7 flex items-center justify-center p-0 bg-transparent border-none rounded-md text-ink/60 shrink-0 transition-all duration-150 ease-out hover:bg-ink/10 hover:text-ink/90 [&>svg]:w-3.5 [&>svg]:h-3.5"
+          className={HEADER_BUTTON}
           onClick={loading ? () => webviewRef.current?.stop() : handleReload}
         >
           <Icon name={loading ? 'x' : 'arrows-clockwise'} />
@@ -229,6 +242,16 @@ export function WebPreviewPanel({
             {currentUrl || 'Enter URL…'}
           </button>
         )}
+        <Tooltip text={chromeLabel}>
+          <button
+            className={HEADER_BUTTON}
+            onClick={toggleChrome}
+            disabled={!url || chrome.opening}
+            aria-label={chromeLabel}
+          >
+            <Icon name="arrow-square-out" />
+          </button>
+        </Tooltip>
         <FullWidthToggle fullWidth={fullWidth} onToggle={onToggleFullWidth} />
         <MinimizeButton onMinimize={onMinimize} />
         <PanelCloseButton onClose={onClose} />
@@ -240,17 +263,23 @@ export function WebPreviewPanel({
           <webview
             ref={setWebviewNode as unknown as React.Ref<HTMLWebViewElement>}
             src={url}
-            style={{
-              position: 'absolute',
-              inset: 0,
-              width: '100%',
-              height: '100%',
-              border: 'none',
-            }}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-sm text-ink/40 bg-terminal-bg">
             Enter a URL above to preview it
+          </div>
+        )}
+        {chrome.error && (
+          <div className="absolute inset-x-0 top-0 flex items-center gap-2 px-3 py-1.5 text-xs text-ink/80 bg-terminal-bg border-b border-ink/10">
+            <Icon name="warning" className="w-3.5 h-3.5 text-ink/50" />
+            <span className="flex-1 min-w-0 truncate">{chrome.error}</span>
+            <button
+              className="px-2 py-0.5 rounded bg-ink/10 hover:bg-ink/15 text-ink/70 border-none transition-colors"
+              onClick={chrome.dismissError}
+            >
+              Dismiss
+            </button>
           </div>
         )}
         {loadError && (

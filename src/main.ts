@@ -34,6 +34,7 @@ import {
 import { seedCaptureFixture } from './capture/fixture';
 import { registerStaticToken } from './apiAuth';
 import { buildAppMenu } from './appMenu';
+import { attachPreviewContextMenu } from './previewContextMenu';
 
 function createElectronLogAdapter(electronLog: typeof log): Logger {
   return {
@@ -219,6 +220,12 @@ const createWindow = (): BrowserWindow => {
     if (!/^https?:\/\//i.test(params.src || '')) {
       params.src = 'about:blank';
     }
+  });
+
+  // Give the previewed page a browser's right-click menu, Inspect Element
+  // included. The guest's WebContents only exists once it attaches.
+  window.webContents.on('did-attach-webview', (_event, guest) => {
+    attachPreviewContextMenu(guest);
   });
 
   // Prevent the main window from navigating away to an external URL.

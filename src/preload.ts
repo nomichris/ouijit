@@ -23,6 +23,7 @@ import type {
   SandboxLaunchFailedPayload,
   CliPanelOp,
   CliPanelResponse,
+  ChromeInstanceInfo,
 } from './types';
 import type { CaptureNavigatePayload } from './capture/types';
 import type {
@@ -228,6 +229,14 @@ contextBridge.exposeInMainWorld('api', {
   cliPanels: {
     onOp: (callback: (op: CliPanelOp) => void) => typedListen('cli:panel-op', callback),
     respond: (requestId: number, response: CliPanelResponse) => typedInvoke('cli-panels:respond', requestId, response),
+  },
+
+  webPreview: {
+    openChrome: (ptyId: string, url: string) => typedInvoke('chrome:open', ptyId, url),
+    closeChrome: (ptyId: string) => typedInvoke('chrome:close', ptyId),
+    chromeStatus: (ptyId: string) => typedInvoke('chrome:status', ptyId),
+    onChromeChanged: (callback: (ptyId: string, instance: ChromeInstanceInfo | null) => void) =>
+      typedListen('chrome:changed', callback),
   },
 
   globalSettings: {

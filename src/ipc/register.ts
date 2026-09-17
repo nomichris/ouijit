@@ -19,7 +19,9 @@ import { registerHealthHandlers } from './handlers/health';
 import { registerGithubHandlers } from './handlers/github';
 import { registerDiffPanelHandlers } from './handlers/diffPanel';
 import { registerAnalysisHandlers } from './handlers/analysis';
+import { registerWebPreviewHandlers } from './handlers/webPreview';
 import { initCliPanels } from '../cliPanels';
+import { closeAllChrome, pruneChromeProfiles } from '../chromeLauncher';
 import { setLensAnnouncer } from '../lens/announce';
 
 /**
@@ -35,6 +37,9 @@ export async function registerIpcHandlers(mainWindow: BrowserWindow): Promise<vo
 
   // Register sandbox backends before PTY handlers so spawns can resolve them.
   registerSandboxProviders();
+
+  // Nothing can be running yet, so every Chrome profile on disk is a leftover.
+  pruneChromeProfiles();
 
   registerProjectHandlers(mainWindow);
   registerGitHandlers();
@@ -52,12 +57,14 @@ export async function registerIpcHandlers(mainWindow: BrowserWindow): Promise<vo
   registerGithubHandlers();
   registerDiffPanelHandlers(mainWindow);
   registerAnalysisHandlers();
+  registerWebPreviewHandlers(mainWindow);
   initCliPanels(mainWindow);
   setLensAnnouncer((change) => typedPush(mainWindow, 'lens:changed', change));
 }
 
 export function cleanupIpc(): void {
   cleanupAllPtys();
+  closeAllChrome();
   cleanupSandboxProviders();
   cleanupPlanWatchers();
   stopHookServer();

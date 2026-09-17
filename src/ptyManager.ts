@@ -11,6 +11,7 @@ import { typedPush } from './ipc/helpers';
 import { getLogger } from './logger';
 import { getVendoredNonoPath } from './sandbox/nono/binary';
 import { issueToken, revokeToken, revokeAllTokens } from './apiAuth';
+import { closeChromeForPty } from './chromeLauncher';
 import { terminalLocale } from './locale';
 
 const ptyLog = getLogger().scope('pty');
@@ -359,6 +360,7 @@ export async function spawnPty(
       }
       activePtys.delete(ptyId);
       clearHookStatus(ptyId);
+      closeChromeForPty(ptyId);
       revokeToken(ptyId);
     });
 

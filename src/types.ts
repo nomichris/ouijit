@@ -600,6 +600,8 @@ export interface ElectronAPI {
   plan: PlanAPI;
   /** CLI-driven terminal panel ops (markdown / web preview) */
   cliPanels: CliPanelsAPI;
+  /** Web preview panel inspector and real-Chrome launching */
+  webPreview: WebPreviewAPI;
   /** Get file path from a dropped File object */
   getPathForFile(file: File): string;
   homePath(): Promise<string>;
@@ -834,8 +836,26 @@ export interface CliPanelInfo {
   path?: string;
   /** Preview URL — preview panels only. */
   url?: string;
+  /** CDP endpoint of the session's Chrome, when one is running. Preview panels
+   *  only, and the same for every preview panel on a session — a session gets
+   *  one browser. */
+  cdpUrl?: string;
   /** Whether this panel is the terminal's active (foreground) panel. */
   active: boolean;
+}
+
+/** A live Chrome launched for a terminal session. */
+export interface ChromeInstanceInfo {
+  pid: number;
+  /** DevTools Protocol base URL, e.g. `http://127.0.0.1:41235`. */
+  cdpUrl: string;
+}
+
+/** `instance` on success, `error` on failure — the codebase's usual result shape. */
+export interface ChromeLaunchResult {
+  ok: boolean;
+  instance?: ChromeInstanceInfo;
+  error?: string;
 }
 
 /** Op forwarded from the main process to the renderer over IPC. */
@@ -861,6 +881,20 @@ export interface CliPanelResponse {
 export interface CliPanelsAPI {
   onOp(callback: (op: CliPanelOp) => void): () => void;
   respond(requestId: number, response: CliPanelResponse): Promise<void>;
+}
+
+/**
+ * The web preview panel's two escapes from the embedded view: DevTools drawn
+ * into a webview of the panel's own, and the user's real Chrome.
+ */
+export interface WebPreviewAPI {
+  /** False when either webview is gone — the caller falls back to a detached window. */
+  attachDevTools(targetId: number, hostId: number): Promise<boolean>;
+  detachDevTools(targetId: number): Promise<void>;
+  openChrome(ptyId: string, url: string): Promise<ChromeLaunchResult>;
+  closeChrome(ptyId: string): Promise<void>;
+  chromeStatus(ptyId: string): Promise<ChromeInstanceInfo | null>;
+  onChromeChanged(callback: (ptyId: string, instance: ChromeInstanceInfo | null) => void): () => void;
 }
 
 /**

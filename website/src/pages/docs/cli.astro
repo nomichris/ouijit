@@ -158,6 +158,15 @@ ouijit markdown remove ./plan.md</code></pre>
 ouijit preview add http://localhost:3000 pty_abc123
 ouijit preview list
 ouijit preview remove http://localhost:3000</code></pre>
+  <p>
+    When the panel's <strong>Open in Chrome</strong> button has started a real browser for the session,
+    <code>ouijit preview list</code> reports its Chrome DevTools Protocol endpoint as <code>cdpUrl</code>, so
+    an agent can drive the page directly:
+  </p>
+  <pre class="glass-bevel"><code>{`{"ptyId":"pty_abc123","kind":"preview","panels":[
+  {"kind":"preview","label":"localhost:3000","url":"http://localhost:3000",
+   "cdpUrl":"http://127.0.0.1:41235","active":true}
+]}`}</code></pre>
 
   <h2>Themes</h2>
   <p><a href="/docs/themes/">Themes</a> are global, not project-scoped.</p>

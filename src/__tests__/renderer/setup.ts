@@ -251,6 +251,15 @@ const mockApi = {
     taskFromPr: vi.fn().mockResolvedValue({ success: true }),
     onDraftsChanged: vi.fn().mockReturnValue(() => {}),
   },
+
+  webPreview: {
+    attachDevTools: vi.fn().mockResolvedValue(true),
+    detachDevTools: vi.fn().mockResolvedValue(undefined),
+    openChrome: vi.fn().mockResolvedValue({ ok: true, instance: { pid: 1, cdpUrl: 'http://127.0.0.1:9222' } }),
+    closeChrome: vi.fn().mockResolvedValue(undefined),
+    chromeStatus: vi.fn().mockResolvedValue(null),
+    onChromeChanged: vi.fn().mockReturnValue(() => {}),
+  },
 };
 
 Object.defineProperty(window, 'api', {
@@ -276,6 +285,15 @@ if (!('IntersectionObserver' in window)) {
     value: NoopIntersectionObserver,
     writable: true,
   });
+}
+
+if (!('ResizeObserver' in window)) {
+  class NoopResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  Object.defineProperty(window, 'ResizeObserver', { value: NoopResizeObserver, writable: true });
 }
 
 if (!Element.prototype.scrollIntoView) {

@@ -42,6 +42,25 @@ import Docs from '../../layouts/Docs.astro';
     its work with <code>ouijit preview add http://localhost:3000</code>.
   </p>
 
+  <h3>Inspect</h3>
+  <p>
+    The bug icon splits the panel and puts Chrome DevTools in the right half — elements, console, network,
+    sources, the lot, against the page the panel is showing. Drag the seam to resize it. It is the same
+    inspector Chrome gives you, because the panel is Chromium.
+  </p>
+
+  <h3>Open in Chrome</h3>
+  <p>
+    The arrow icon hands the URL to the Chrome installed on your machine, in a window of its own with DevTools
+    already open. Each terminal session gets its own browser on its own profile, so two agents working in two
+    worktrees never share one; a second preview URL on the same session opens as a tab in the browser already
+    up. The browser closes with the session.
+  </p>
+  <p>
+    That Chrome runs with a debugging port, and <code>ouijit preview list</code> reports it as
+    <code>cdpUrl</code> — enough for an agent to drive the page itself over the Chrome DevTools Protocol.
+  </p>
+
   <img
     class="docs-screenshot"
     src="/assets/screenshots/preview.png"

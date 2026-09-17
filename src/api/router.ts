@@ -60,11 +60,12 @@ import {
 import { getProjectList } from '../projectList';
 import { getCustomSandboxConfig, setCustomSandboxConfig } from '../sandbox/custom/config';
 import { cliPanelRequest } from '../cliPanels';
+import { getChromeForPty } from '../chromeLauncher';
 import { isPtyActive, getPtyTaskContext } from '../ptyManager';
 import { typedPush } from '../ipc/helpers';
 import { getLogger } from '../logger';
 import { authenticateRequest, type AuthContext, type ApiScope } from '../apiAuth';
-import type { CliHookMode, CliPanelKind } from '../types';
+import type { CliHookMode, CliPanelKind, CliPanelInfo } from '../types';
 import { isCaptureMode } from '../capture/captureMode';
 import { handleCaptureNavigate, handleCaptureSnapshot } from '../capture/captureRoutes';
 
@@ -313,11 +314,15 @@ async function runPanelOp(
   action: 'list' | 'add' | 'remove',
   kind: CliPanelKind,
   value?: string,
-): Promise<{ ptyId: string; kind: CliPanelKind; panels: unknown }> {
+): Promise<{ ptyId: string; kind: CliPanelKind; panels: CliPanelInfo[] }> {
   if (!isPtyActive(ptyId)) throw new HttpError(404, `PTY ${ptyId} not found or inactive`);
   const result = await cliPanelRequest({ ptyId, action, kind, value });
   if (!result.ok) throw new HttpError(404, result.error ?? 'Panel operation failed');
-  return { ptyId, kind, panels: result.panels ?? [] };
+  // The renderer owns the panels but not the browser: a Chrome launched for
+  // this session lives here, so its endpoint is attached on the way out.
+  const chrome = kind === 'preview' ? getChromeForPty(ptyId) : null;
+  const panels = (result.panels ?? []).map((panel) => (chrome ? { ...panel, cdpUrl: chrome.cdpUrl } : panel));
+  return { ptyId, kind, panels };
 }
 
 const routes: Route[] = [

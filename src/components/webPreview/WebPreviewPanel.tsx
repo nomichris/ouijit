@@ -3,9 +3,7 @@ import { Icon } from '../terminal/Icon';
 import { TooltipButton } from '../ui/TooltipButton';
 import { Tooltip } from '../ui/Tooltip';
 import { FullWidthToggle, MinimizeButton, PanelCloseButton } from '../terminal/FullWidthToggle';
-import { ResizeHandle } from '../common/ResizeHandle';
 import { normalizeUrl } from './urlHelpers';
-import { DevToolsHost } from './DevToolsHost';
 import { useSessionChrome } from './useSessionChrome';
 
 interface WebPreviewPanelProps {
@@ -30,16 +28,10 @@ interface ElectronWebviewElement extends HTMLElement {
   canGoBack(): boolean;
   canGoForward(): boolean;
   getURL(): string;
-  getWebContentsId(): number;
-  openDevTools(): void;
 }
 
 const HEADER_BUTTON =
   'w-7 h-7 flex items-center justify-center p-0 bg-transparent border-none rounded-md text-ink/60 shrink-0 transition-all duration-150 ease-out hover:bg-ink/10 hover:text-ink/90 disabled:text-ink/20 disabled:hover:bg-transparent [&>svg]:w-3.5 [&>svg]:h-3.5';
-
-const INSPECTOR_MIN_WIDTH = 240;
-const INSPECTOR_DEFAULT_WIDTH = 420;
-const PAGE_MIN_WIDTH = 200;
 
 export function WebPreviewPanel({
   ptyId,
@@ -59,14 +51,10 @@ export function WebPreviewPanel({
   const [editingUrl, setEditingUrl] = useState(!url);
   const [urlDraft, setUrlDraft] = useState(url);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [inspectorTargetId, setInspectorTargetId] = useState<number | null>(null);
-  const [inspectorWidth, setInspectorWidth] = useState(INSPECTOR_DEFAULT_WIDTH);
-  const [contentWidth, setContentWidth] = useState(0);
   const chrome = useSessionChrome(ptyId);
 
   const webviewRef = useRef<ElectronWebviewElement | null>(null);
   const urlInputRef = useRef<HTMLInputElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
 
   // Attach webview event listeners via a callback ref so they rewire if the
   // <webview> remounts (e.g. url cleared and set again).
@@ -158,42 +146,10 @@ export function WebPreviewPanel({
     webviewRef.current?.reload();
   }, []);
 
-  const toggleInspector = useCallback(() => {
-    if (inspectorTargetId !== null) {
-      setInspectorTargetId(null);
-      return;
-    }
-    const webview = webviewRef.current;
-    if (webview) setInspectorTargetId(webview.getWebContentsId());
-  }, [inspectorTargetId]);
-
-  // Electron may refuse to draw the frontend into a webview of ours.
-  const fallBackToDetachedDevTools = useCallback(() => {
-    setInspectorTargetId(null);
-    webviewRef.current?.openDevTools();
-  }, []);
-
   const toggleChrome = useCallback(() => {
     if (chrome.instance) void chrome.close();
     else if (currentUrl || url) void chrome.open(currentUrl || url);
   }, [chrome, currentUrl, url]);
-
-  // ResizeHandle reports the width of the pane before it, which here is the
-  // page — and the page is the pane that flexes.
-  useEffect(() => {
-    const node = contentRef.current;
-    if (!node) return;
-    setContentWidth(node.clientWidth);
-    const observer = new ResizeObserver(() => setContentWidth(node.clientWidth));
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
-
-  // The page webview unmounts when the URL is cleared, taking the contents the
-  // inspector was attached to with it.
-  useEffect(() => {
-    if (!url) setInspectorTargetId(null);
-  }, [url]);
 
   const handleBack = useCallback(() => {
     const w = webviewRef.current;
@@ -229,7 +185,6 @@ export function WebPreviewPanel({
     if (editingUrl) urlInputRef.current?.focus();
   }, [editingUrl]);
 
-  const inspectorLabel = inspectorTargetId !== null ? 'Hide inspector' : 'Inspect';
   const chromeLabel = chrome.instance ? 'Close Chrome' : 'Open in Chrome';
 
   return (
@@ -287,11 +242,6 @@ export function WebPreviewPanel({
             {currentUrl || 'Enter URL…'}
           </button>
         )}
-        <Tooltip text={inspectorLabel}>
-          <button className={HEADER_BUTTON} onClick={toggleInspector} disabled={!url} aria-label={inspectorLabel}>
-            <Icon name="bug" />
-          </button>
-        </Tooltip>
         <Tooltip text={chromeLabel}>
           <button
             className={HEADER_BUTTON}
@@ -308,32 +258,13 @@ export function WebPreviewPanel({
       </div>
 
       {/* Content */}
-      <div ref={contentRef} className="flex-1 relative bg-white flex">
+      <div className="flex-1 relative bg-white">
         {url ? (
-          <>
-            <webview
-              ref={setWebviewNode as unknown as React.Ref<HTMLWebViewElement>}
-              src={url}
-              style={{ flex: 1, minWidth: 0, height: '100%', border: 'none' }}
-            />
-            {inspectorTargetId !== null && (
-              <>
-                {contentWidth > 0 && (
-                  <ResizeHandle
-                    width={contentWidth - inspectorWidth}
-                    onWidth={(pageWidth) => setInspectorWidth(contentWidth - pageWidth)}
-                    min={PAGE_MIN_WIDTH}
-                    max={Math.max(PAGE_MIN_WIDTH, contentWidth - INSPECTOR_MIN_WIDTH)}
-                    defaultWidth={contentWidth - INSPECTOR_DEFAULT_WIDTH}
-                    label="Resize the inspector"
-                  />
-                )}
-                <div className="shrink-0 h-full" style={{ width: inspectorWidth }}>
-                  <DevToolsHost targetId={inspectorTargetId} onUnavailable={fallBackToDetachedDevTools} />
-                </div>
-              </>
-            )}
-          </>
+          <webview
+            ref={setWebviewNode as unknown as React.Ref<HTMLWebViewElement>}
+            src={url}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
+          />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-sm text-ink/40 bg-terminal-bg">
             Enter a URL above to preview it

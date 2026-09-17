@@ -253,8 +253,6 @@ const mockApi = {
   },
 
   webPreview: {
-    attachDevTools: vi.fn().mockResolvedValue(true),
-    detachDevTools: vi.fn().mockResolvedValue(undefined),
     openChrome: vi.fn().mockResolvedValue({ ok: true, instance: { pid: 1, cdpUrl: 'http://127.0.0.1:9222' } }),
     closeChrome: vi.fn().mockResolvedValue(undefined),
     chromeStatus: vi.fn().mockResolvedValue(null),

@@ -883,14 +883,8 @@ export interface CliPanelsAPI {
   respond(requestId: number, response: CliPanelResponse): Promise<void>;
 }
 
-/**
- * The web preview panel's two escapes from the embedded view: DevTools drawn
- * into a webview of the panel's own, and the user's real Chrome.
- */
+/** The web preview panel's escape from the embedded view: the user's real Chrome. */
 export interface WebPreviewAPI {
-  /** False when either webview is gone — the caller falls back to a detached window. */
-  attachDevTools(targetId: number, hostId: number): Promise<boolean>;
-  detachDevTools(targetId: number): Promise<void>;
   openChrome(ptyId: string, url: string): Promise<ChromeLaunchResult>;
   closeChrome(ptyId: string): Promise<void>;
   chromeStatus(ptyId: string): Promise<ChromeInstanceInfo | null>;

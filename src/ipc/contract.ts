@@ -243,8 +243,6 @@ export interface IpcInvokeContract {
   'cli-panels:respond': { args: [requestId: number, response: CliPanelResponse]; return: void };
 
   // ── Web preview ──────────────────────────────────────────────────────
-  'webview:attach-devtools': { args: [targetId: number, hostId: number]; return: boolean };
-  'webview:detach-devtools': { args: [targetId: number]; return: void };
   'chrome:open': { args: [ptyId: string, url: string]; return: ChromeLaunchResult };
   'chrome:close': { args: [ptyId: string]; return: void };
   'chrome:status': { args: [ptyId: string]; return: ChromeInstanceInfo | null };

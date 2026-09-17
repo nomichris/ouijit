@@ -34,7 +34,7 @@ import {
 import { seedCaptureFixture } from './capture/fixture';
 import { registerStaticToken } from './apiAuth';
 import { buildAppMenu } from './appMenu';
-import { DEVTOOLS_PARTITION } from './constants/webPreview';
+import { attachPreviewContextMenu } from './previewContextMenu';
 
 function createElectronLogAdapter(electronLog: typeof log): Logger {
   return {
@@ -214,15 +214,18 @@ const createWindow = (): BrowserWindow => {
     delete webPreferences.preload;
     webPreferences.nodeIntegration = false;
     webPreferences.contextIsolation = true;
-    // The DevTools frontend is a privileged Chromium page and won't run in a
-    // sandboxed renderer. It is Chromium's own code rather than anything we
-    // loaded, and only reaches that webview through setDevToolsWebContents.
-    webPreferences.sandbox = params.partition !== DEVTOOLS_PARTITION;
+    webPreferences.sandbox = true;
 
     // Only allow http(s) URLs. A bad src attribute can't ship us to a file:// page.
     if (!/^https?:\/\//i.test(params.src || '')) {
       params.src = 'about:blank';
     }
+  });
+
+  // Give the previewed page a browser's right-click menu, Inspect Element
+  // included. The guest's WebContents only exists once it attaches.
+  window.webContents.on('did-attach-webview', (_event, guest) => {
+    attachPreviewContextMenu(guest);
   });
 
   // Prevent the main window from navigating away to an external URL.

@@ -232,8 +232,6 @@ contextBridge.exposeInMainWorld('api', {
   },
 
   webPreview: {
-    attachDevTools: (targetId: number, hostId: number) => typedInvoke('webview:attach-devtools', targetId, hostId),
-    detachDevTools: (targetId: number) => typedInvoke('webview:detach-devtools', targetId),
     openChrome: (ptyId: string, url: string) => typedInvoke('chrome:open', ptyId, url),
     closeChrome: (ptyId: string) => typedInvoke('chrome:close', ptyId),
     chromeStatus: (ptyId: string) => typedInvoke('chrome:status', ptyId),
